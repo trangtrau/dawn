@@ -4,7 +4,6 @@ import aiohttp
 from loguru import logger
 import random
 
-# credits to dwisyafriadi/dawn
 async def send_keepalive_request(appid, bearer_token, username, extension_id, number_of_tabs, proxy=None):
     url = f"https://www.aeropres.in/chromeapi/dawn/v1/userreward/keepalive?appid={appid}"
     headers = {
@@ -46,18 +45,17 @@ async def read_proxies_from_file(file_path):
         return []
 
 async def execute_account(account, proxies, extension_id, number_of_tabs):
-    while True:
-        proxy = random.choice(proxies) if proxies else None
-        logger.info(f"Using proxy: {proxy}")
-        response = await send_keepalive_request(
-            account["AppID"], account["Token"], account["Email"], extension_id, number_of_tabs, proxy
-        )
-        if response:
-            logger.info(f"Keep alive successful for {account['Email']}")
-            break
-        else:
-            logger.error(f"Retrying for {account['Email']} in 10 seconds...")
-            await asyncio.sleep(10)
+    proxy = random.choice(proxies) if proxies else None
+    logger.info(f"Using proxy: {proxy}")
+    response = await send_keepalive_request(
+        account["AppID"], account["Token"], account["Email"], extension_id, number_of_tabs, proxy
+    )
+    if response:
+        logger.info(f"Keep alive successful for {account['Email']}")
+        return True
+    else:
+        logger.error(f"Keep alive failed for {account['Email']}")
+        return False
 
 async def main():
     with open("config.json", "r") as config_file:
@@ -65,8 +63,13 @@ async def main():
     proxies = await read_proxies_from_file("proxy.txt")
     extension_id = "fpdkjdnhkakefebpekbdhillbhonfjjp"
     number_of_tabs = 0
-    for account in accounts:
-        await execute_account(account, proxies, extension_id, number_of_tabs)
+    while True:
+        for account in accounts:
+            success = await execute_account(account, proxies, extension_id, number_of_tabs)
+            if not success:
+                logger.info(f"Moving to the next account after failure: {account['Email']}")
+        logger.info("All accounts processed. Restarting after 180 seconds.")
+        await asyncio.sleep(180)
 
 if __name__ == '__main__':
     asyncio.run(main())
