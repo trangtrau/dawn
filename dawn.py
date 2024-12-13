@@ -4,6 +4,7 @@ import aiohttp
 from loguru import logger
 import random
 
+# credits to dwisyafriadi/dawn
 async def send_keepalive_request(appid, bearer_token, username, extension_id, number_of_tabs, proxy=None):
     url = f"https://www.aeropres.in/chromeapi/dawn/v1/userreward/keepalive?appid={appid}"
     headers = {
